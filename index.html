@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>先憂後樂：希文傳</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #e5e5f7;
+            background-image: radial-gradient(#444cf7 0.5px, transparent 0.5px), radial-gradient(#444cf7 0.5px, #e5e5f7 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0,10px 10px;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* 復古水墨濾鏡背景 */
+        .ink-bg {
+            background-color: #f4f1ea;
+            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05"/></svg>');
+        }
+
+        /* 第一章：粥的樣式 */
+        .porridge {
+            width: 200px;
+            height: 200px;
+            background: #d4c4b7;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+            cursor: pointer;
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.1);
+        }
+        .cut-h, .cut-v {
+            position: absolute;
+            background: #8b5a2b;
+            display: none;
+        }
+        .cut-h { width: 100%; height: 4px; top: 50%; left: 0; transform: translateY(-50%); }
+        .cut-v { width: 4px; height: 100%; left: 50%; top: 0; transform: translateX(-50%); }
+
+        /* 第五章：天氣濾鏡 */
+        .weather-rain {
+            background-color: #4a5568 !important;
+            color: #cbd5e0;
+            transition: all 1s ease;
+        }
+        .weather-sun {
+            background-color: #f6e05e !important;
+            color: #744210;
+            transition: all 1s ease;
+        }
+
+        /* 隱藏元素與動畫 */
+        .hidden-screen { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 對話框樣式 */
+        .dialogue-box {
+            border: 4px solid #2d3748;
+            border-radius: 10px;
+            background: rgba(244, 241, 234, 0.95);
+            box-shadow: 4px 4px 0px #2d3748;
+        }
+        
+        .btn-ink {
+            background: transparent;
+            border: 2px solid #2d3748;
+            color: #2d3748;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 2px 2px 0px #2d3748;
+        }
+        .btn-ink:hover {
+            background: #2d3748;
+            color: #f4f1ea;
+            top: 2px;
+            left: 2px;
+            box-shadow: 0px 0px 0px #2d3748;
+        }
+        .btn-ink:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 拖曳與配對相關 */
+        .drop-zone { border: 2px dashed #4a5568; min-height: 50px; }
+        .drag-item { cursor: grab; }
+        .drag-item:active { cursor: grabbing; }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center">
+
+    <!-- 主遊戲容器 -->
+    <div id="game-container" class="ink-bg w-full max-w-3xl h-[85vh] md:h-[90vh] rounded-xl shadow-2xl relative overflow-hidden flex flex-col items-center">
+        
+        <!-- 全局對話框 (懸浮) -->
+        <div id="dialogue-overlay" class="absolute inset-0 bg-black/50 z-50 flex-col justify-end p-6 hidden-screen">
+            <div class="dialogue-box w-full p-6 relative animate-bounce" style="animation-iteration-count: 1;">
+                <div class="text-sm font-bold text-gray-500 mb-1" id="dialogue-speaker">旁白</div>
+                <div class="text-lg md:text-xl text-gray-800 leading-relaxed" id="dialogue-text">...</div>
+                <button onclick="nextDialogue()" class="absolute bottom-4 right-4 btn-ink px-4 py-1 rounded">繼續 ▼</button>
+            </div>
+        </div>
+
+        <!-- 標題畫面 -->
+        <div id="screen-title" class="w-full h-full flex flex-col items-center justify-center p-8 fade-in text-center">
+            <h1 class="text-5xl md:text-6xl font-bold tracking-widest text-gray-800 mb-4" style="writing-mode: vertical-rl;">先憂後樂</h1>
+            <h2 class="text-2xl text-gray-600 mb-12">希文傳 ─ 范仲淹生平解謎</h2>
+            <button onclick="startGame()" class="btn-ink text-xl px-8 py-3 rounded-lg font-bold">進入歷史</button>
+        </div>
+
+        <!-- 第一章：劃粥斷齏 -->
+        <div id="screen-ch1" class="w-full h-full flex-col items-center justify-start p-8 fade-in hidden-screen">
+            <h3 class="text-3xl font-bold mb-2">第一章：醴泉苦讀</h3>
+            <p class="text-gray-600 mb-8">劃粥斷齏：請將凝固的粥劃分四等份，以便分次食用。</p>
+            
+            <div class="porridge mt-10" onclick="cutPorridge()">
+                <div id="porridge-h" class="cut-h"></div>
+                <div id="porridge-v" class="cut-v"></div>
+            </div>
+            
+            <p id="ch1-tip" class="mt-8 text-lg text-gray-700 animate-pulse">點擊粥面進行切割...</p>
+        </div>
+
+        <!-- 第二章：慶曆新政 (校園版) -->
+        <div id="screen-ch2" class="w-full h-full flex-col items-center justify-start p-4 fade-in hidden-screen overflow-y-auto">
+            <h3 class="text-3xl font-bold mb-2 mt-4">第二章：直言極諫</h3>
+            <p class="text-gray-600 mb-4">揪出雷隊友 (明黜陟、抑僥倖)：身為小組長，請審查組員貢獻，將政策木牌配對到正確的情境上。</p>
+            
+            <div class="w-full flex flex-col md:flex-row gap-4 px-4 mt-2">
+                <!-- 拖曳來源 (政策木牌) -->
+                <div class="w-full md:w-1/3 bg-gray-200 p-4 rounded-lg">
+                    <h4 class="font-bold mb-4 border-b border-gray-400 pb-2">政策木牌</h4>
+                    <div id="policy-1" class="drag-item bg-white p-2 rounded shadow mb-3 border border-gray-400 text-center" draggable="true" ondragstart="drag(event)">有做事才有高分<br><span class="text-xs text-gray-500">(明黜陟)</span></div>
+                    <div id="policy-2" class="drag-item bg-white p-2 rounded shadow border border-gray-400 text-center" draggable="true" ondragstart="drag(event)">看實力不看關係<br><span class="text-xs text-gray-500">(抑僥倖)</span></div>
+                </div>
+
+                <!-- 放置目標 (學生情境) -->
+                <div class="w-full md:w-2/3 flex flex-col gap-4">
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200 flex flex-col">
+                        <p class="font-bold text-red-800">雷隊友 A：「我爸是家長會長，我不做事你也得讓我掛名！」</p>
+                        <p class="text-sm text-gray-600 mb-2">該用哪項政策反駁他？</p>
+                        <div id="drop-zone-1" class="drop-zone bg-red-100/50 rounded flex items-center justify-center text-gray-400" ondrop="drop(event)" ondragover="allowDrop(event)">拖曳政策至此</div>
+                    </div>
+                    
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200 flex flex-col">
+                        <p class="font-bold text-green-800">默默付出 B：「我熬夜查了三天資料，但我不擅長上台...」</p>
+                        <p class="text-sm text-gray-600 mb-2">該用哪項政策保障他？</p>
+                        <div id="drop-zone-2" class="drop-zone bg-green-100/50 rounded flex items-center justify-center text-gray-400" ondrop="drop(event)" ondragover="allowDrop(event)">拖曳政策至此</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="ch2-btn" onclick="checkCh2()" class="mt-6 btn-ink px-6 py-2 rounded-lg hidden">頒布新政</button>
+        </div>
+
+        <!-- 第三章：義田與烏味草 -->
+        <div id="screen-ch3" class="w-full h-full flex-col items-center justify-start p-8 fade-in hidden-screen">
+            <h3 class="text-3xl font-bold mb-2">第三章：仁心撫民</h3>
+            <p class="text-gray-600 mb-6">點擊相鄰格子規劃賑災路線，必須經過「烏味草」並抵達終點「災區」。</p>
+            
+            <div id="grid-container" class="grid grid-cols-3 gap-2 w-64 h-64 bg-gray-300 p-2 rounded-lg">
+                <!-- 由 JS 生成 3x3 網格 -->
+            </div>
+            <p id="ch3-tip" class="mt-4 text-red-600 font-bold h-6"></p>
+            <button onclick="resetCh3()" class="mt-4 text-gray-500 underline text-sm">重置路線</button>
+        </div>
+
+        <!-- 第四章：禦夏保邊 -->
+        <div id="screen-ch4" class="w-full h-full flex-col items-center justify-start p-8 fade-in hidden-screen">
+            <h3 class="text-3xl font-bold mb-2">第四章：軍中有一范</h3>
+            <p class="text-gray-600 mb-6">修築堡寨：西夏軍正從北方進攻。你有 2 座堡寨，請點選關鍵節點以阻斷敵軍路線。</p>
+            
+            <div class="relative w-full max-w-sm h-64 bg-[url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%\' height=\'100%\'><line x1=\'50%\' y1=\'10%\' x2=\'20%\' y2=\'50%\' stroke=\'#999\' stroke-width=\'2\'/><line x1=\'50%\' y1=\'10%\' x2=\'80%\' y2=\'50%\' stroke=\'#999\' stroke-width=\'2\'/><line x1=\'20%\' y1=\'50%\' x2=\'50%\' y2=\'90%\' stroke=\'#999\' stroke-width=\'2\'/><line x1=\'80%\' y1=\'50%\' x2=\'50%\' y2=\'90%\' stroke=\'#999\' stroke-width=\'2\'/></svg>')] bg-center bg-no-repeat bg-contain">
+                <!-- 節點 -->
+                <div class="absolute top-[5%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 text-center">
+                    <span class="text-2xl">🐎</span><br><span class="text-xs font-bold text-red-600">西夏軍</span>
+                </div>
+                <div class="absolute bottom-[5%] left-[50%] transform -translate-x-1/2 translate-y-1/2 text-center">
+                    <span class="text-2xl">🏯</span><br><span class="text-xs font-bold text-blue-600">大宋邊關</span>
+                </div>
+                
+                <!-- 可點擊的堡寨節點 -->
+                <button id="node-1" onclick="toggleFort(1)" class="absolute top-[50%] left-[20%] transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-4 border-gray-400 rounded-full flex items-center justify-center hover:bg-gray-200 transition"></button>
+                <button id="node-2" onclick="toggleFort(2)" class="absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-4 border-gray-400 rounded-full flex items-center justify-center hover:bg-gray-200 transition"></button>
+                <button id="node-3" onclick="toggleFort(3)" class="absolute top-[50%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white border-4 border-gray-400 rounded-full flex items-center justify-center hover:bg-gray-200 transition"></button>
+            </div>
+
+            <div class="mt-8 flex justify-between w-full max-w-sm px-4">
+                <span class="font-bold">剩餘堡寨：<span id="fort-count" class="text-blue-600 text-xl">2</span></span>
+                <button onclick="checkCh4()" class="btn-ink px-4 py-1 rounded">確認佈署</button>
+            </div>
+            <p id="ch4-tip" class="mt-4 text-red-600 text-sm"></p>
+        </div>
+
+        <!-- 第五章：岳陽樓記 -->
+        <div id="screen-ch5" class="w-full h-full flex-col items-center justify-start p-8 fade-in hidden-screen transition-colors duration-1000 weather-rain">
+            <h3 class="text-3xl font-bold mb-2">第五章：千古絕唱</h3>
+            <p class="opacity-80 mb-4 text-center text-sm md:text-base">洞庭湖氣象萬千。<br>點擊切換陰晴，尋找隱藏的文字碎片放置於天平兩端。</p>
+            
+            <button onclick="toggleWeather()" class="bg-black/20 hover:bg-black/30 px-6 py-2 rounded-full border border-current font-bold mb-8 backdrop-blur-sm">
+                切換陰晴：<span id="weather-status">霪雨霏霏 🌧️</span>
+            </button>
+
+            <!-- 尋找的碎片 -->
+            <div class="relative w-full h-32 mb-8 border border-current rounded-lg bg-black/5 overflow-hidden flex items-center justify-center">
+                <!-- 雨天可見 -->
+                <button id="frag-worry" onclick="collectFragment('worry')" class="absolute text-xl font-bold p-2 border-2 border-dashed border-current rounded transform -translate-x-20 hover:scale-110 transition">先天下之憂而憂</button>
+                <!-- 晴天可見 (預設隱藏) -->
+                <button id="frag-joy" onclick="collectFragment('joy')" class="absolute text-xl font-bold p-2 border-2 border-dashed border-current rounded transform translate-x-20 opacity-0 pointer-events-none hover:scale-110 transition">後天下之樂而樂</button>
+            </div>
+
+            <!-- 天平 -->
+            <div class="w-full max-w-xs flex flex-col items-center">
+                <div class="w-2 h-16 bg-current"></div>
+                <div id="scale-beam" class="w-full h-2 bg-current relative transition-transform duration-700 transform rotate-12">
+                    <div id="plate-left" class="absolute -left-6 top-2 w-16 h-12 border-b-4 border-l-2 border-r-2 border-current rounded-b-full flex items-center justify-center text-xs p-1 text-center font-bold">空</div>
+                    <div id="plate-right" class="absolute -right-6 top-2 w-16 h-12 border-b-4 border-l-2 border-r-2 border-current rounded-b-full flex items-center justify-center text-xs p-1 text-center font-bold">空</div>
+                </div>
+                <div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[20px] border-current -mt-[2px]"></div>
+            </div>
+        </div>
+
+        <!-- 結局畫面 -->
+        <div id="screen-end" class="w-full h-full flex flex-col items-center justify-center p-8 fade-in hidden-screen text-center bg-gray-900 text-white">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-yellow-400">通關：千古名臣</h1>
+            <p class="text-lg md:text-xl leading-relaxed max-w-lg mb-8">
+                你成功陪伴范仲淹走完了一生。<br><br>
+                從劃粥斷齏的苦讀，到不畏權貴的新政；<br>
+                從心繫百姓的義田，到運籌帷幄的邊防。<br>
+                最終，那句「先天下之憂而憂，後天下之樂而樂」成為了知識份子最高的精神指標。
+            </p>
+            <button onclick="location.reload()" class="bg-transparent border border-white hover:bg-white hover:text-black transition px-6 py-2 rounded">重新體驗</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 核心流程控制 ---
+        const screens = ['title', 'ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'end'];
+        let currentDialogues = [];
+        let dialogueIndex = 0;
+        let nextAction = null;
+
+        function showScreen(screenName) {
+            screens.forEach(s => {
+                document.getElementById(`screen-${s}`).classList.add('hidden-screen');
+            });
+            document.getElementById(`screen-${screenName}`).classList.remove('hidden-screen');
+            document.getElementById(`screen-${screenName}`).classList.add('fade-in');
+        }
+
+        function playDialogue(script, onComplete) {
+            currentDialogues = script;
+            dialogueIndex = 0;
+            nextAction = onComplete;
+            document.getElementById('dialogue-overlay').classList.remove('hidden-screen');
+            document.getElementById('dialogue-overlay').classList.add('flex');
+            renderDialogue();
+        }
+
+        function renderDialogue() {
+            if (dialogueIndex < currentDialogues.length) {
+                const line = currentDialogues[dialogueIndex];
+                document.getElementById('dialogue-speaker').innerText = line.speaker;
+                document.getElementById('dialogue-text').innerHTML = line.text;
+            } else {
+                document.getElementById('dialogue-overlay').classList.add('hidden-screen');
+                document.getElementById('dialogue-overlay').classList.remove('flex');
+                if (nextAction) nextAction();
+            }
+        }
+
+        function nextDialogue() {
+            dialogueIndex++;
+            renderDialogue();
+        }
+
+        function startGame() {
+            const script = [
+                { speaker: "旁白", text: "北宋時期，有一位兩歲喪父、隨母改嫁的清寒子弟。" },
+                { speaker: "范仲淹 (少年)", text: "我雖身居醴泉寺，生活困苦，但讀書方能報國。" },
+                { speaker: "旁白", text: "為了省錢，他每天只煮一鍋粥，等凝固後切塊分食。這就是「劃粥斷齏」的典故。" }
+            ];
+            playDialogue(script, () => showScreen('ch1'));
+        }
+
+        // --- 第一章邏輯 (劃粥斷齏) ---
+        let cuts = 0;
+        function cutPorridge() {
+            if (cuts === 0) {
+                document.getElementById('porridge-h').style.display = 'block';
+                document.getElementById('ch1-tip').innerText = "已切一刀。還差一刀...";
+                cuts++;
+            } else if (cuts === 1) {
+                document.getElementById('porridge-v').style.display = 'block';
+                document.getElementById('ch1-tip').innerText = "劃分為四，配以鹹菜。苦讀不輟，終中進士！";
+                document.getElementById('ch1-tip').classList.replace('text-gray-700', 'text-green-600');
+                cuts++;
+                setTimeout(() => {
+                    const script = [
+                        { speaker: "旁白", text: "科舉及第後，范仲淹入朝為官，認祖歸宗恢復范姓。" },
+                        { speaker: "范仲淹 (參知政事)", text: "國家積弊已深，冗官充斥。若不改革，天下危矣！我必須推動『慶曆新政』。" },
+                        { speaker: "旁白", text: "請用現代『學校分組報告』的角度，來理解他推動的「明黜陟」(賞罰分明) 與「抑僥倖」(打擊靠關係) 政策吧！" }
+                    ];
+                    playDialogue(script, () => showScreen('ch2'));
+                }, 2000);
+            }
+        }
+
+        // --- 第二章邏輯 (拖曳配對 - 校園版) ---
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            
+            // 確保只能放在 drop-zone 內
+            if (ev.target.classList.contains('drop-zone')) {
+                // 如果裡面已經有東西，就把舊的東西放回原處 (簡化處理：覆蓋)
+                ev.target.innerHTML = '';
+                ev.target.appendChild(draggedElement);
+                draggedElement.classList.remove('mb-3'); // 移除拖曳區的 margin
+                
+                checkCh2State();
+            }
+        }
+
+        function checkCh2State() {
+            const dz1 = document.getElementById('drop-zone-1').firstElementChild;
+            const dz2 = document.getElementById('drop-zone-2').firstElementChild;
+            
+            if (dz1 && dz2) {
+                document.getElementById('ch2-btn').classList.remove('hidden');
+            }
+        }
+
+        function checkCh2() {
+            const dz1 = document.getElementById('drop-zone-1').firstElementChild?.id;
+            const dz2 = document.getElementById('drop-zone-2').firstElementChild?.id;
+
+            // 雷隊友A (靠關係) -> 需要「抑僥倖」(policy-2)
+            // 默默付出B (有做事) -> 需要「明黜陟」(policy-1)
+            if (dz1 === 'policy-2' && dz2 === 'policy-1') {
+                alert("太棒了！你完美應用了政策！這就是范仲淹想整頓官場的核心精神。");
+                const script = [
+                    { speaker: "旁白", text: "雖然新政因守舊派阻撓而失敗，但范仲淹並未氣餒。" },
+                    { speaker: "范仲淹", text: "既然不能在朝廷變法，我便去地方賑災撫民、興辦義田！" }
+                ];
+                playDialogue(script, initCh3);
+            } else {
+                alert("配對錯誤喔！想想看：對付「靠爸爸的雷隊友」應該用哪一條？保護「認真做事的人」又是哪一條？");
+            }
+        }
+
+        // --- 第三章邏輯 (網格尋路) ---
+        let currentPos = 0; // 0-8 (3x3 grid)
+        const targetPos = 8;
+        const herbPos = 2; // 烏味草位置在右上角
+        let hasHerb = false;
+
+        function initCh3() {
+            showScreen('ch3');
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'w-full h-full bg-white rounded border-2 border-transparent flex items-center justify-center text-2xl cursor-pointer transition';
+                
+                if (i === currentPos) cell.innerHTML = '🚶';
+                else if (i === targetPos) cell.innerHTML = '🏕️'; // 災區
+                else if (i === herbPos && !hasHerb) cell.innerHTML = '🌿'; // 烏味草
+                else cell.innerHTML = '🟩'; // 平地
+
+                // 檢查相鄰
+                const isAdjacent = (Math.abs(i - currentPos) === 1 && Math.floor(i/3) === Math.floor(currentPos/3)) || Math.abs(i - currentPos) === 3;
+                
+                if (isAdjacent) {
+                    cell.classList.add('border-blue-400', 'hover:bg-blue-100');
+                    cell.onclick = () => movePlayer(i);
+                }
+                
+                container.appendChild(cell);
+            }
+        }
+
+        function movePlayer(newPos) {
+            currentPos = newPos;
+            if (currentPos === herbPos) {
+                hasHerb = true;
+                document.getElementById('ch3-tip').innerText = "獲得『烏味草』！(呈報皇上知曉民間疾苦)";
+                document.getElementById('ch3-tip').classList.replace('text-red-600', 'text-green-600');
+            }
+
+            if (currentPos === targetPos) {
+                if (hasHerb) {
+                    const script = [
+                        { speaker: "旁白", text: "范仲淹晚年捐出積蓄設立『義田』，照顧貧困族人，深受愛戴。" },
+                        { speaker: "皇帝", text: "西夏屢次侵犯邊境，滿朝文武，唯有希文能當此任！" },
+                        { speaker: "范仲淹", text: "臣願赴陝西，修築堡寨，阻擋西夏騎兵！" }
+                    ];
+                    playDialogue(script, () => showScreen('ch4'));
+                } else {
+                    document.getElementById('ch3-tip').innerText = "抵達災區，但忘了採集烏味草呈報朝廷！請重置。";
+                    document.getElementById('ch3-tip').classList.replace('text-green-600', 'text-red-600');
+                }
+            } else {
+                renderGrid();
+            }
+        }
+
+        function resetCh3() {
+            currentPos = 0;
+            hasHerb = false;
+            document.getElementById('ch3-tip').innerText = "";
+            renderGrid();
+        }
+
+        // --- 第四章邏輯 (堡寨防禦) ---
+        let fortsAvailable = 2;
+        let placedForts = [];
+
+        function toggleFort(nodeId) {
+            const btn = document.getElementById(`node-${nodeId}`);
+            const idx = placedForts.indexOf(nodeId);
+            
+            if (idx > -1) {
+                // 移除
+                placedForts.splice(idx, 1);
+                btn.innerHTML = '';
+                btn.classList.remove('bg-blue-200');
+                fortsAvailable++;
+            } else if (fortsAvailable > 0) {
+                // 放置
+                placedForts.push(nodeId);
+                btn.innerHTML = '🏰';
+                btn.classList.add('bg-blue-200');
+                fortsAvailable--;
+            }
+            document.getElementById('fort-count').innerText = fortsAvailable;
+        }
+
+        function checkCh4() {
+            // 敵人有兩條分支路線，節點1和3是關鍵咽喉
+            if (placedForts.includes(1) && placedForts.includes(3)) {
+                document.getElementById('ch4-tip').innerText = "";
+                const script = [
+                    { speaker: "西夏軍", text: "軍中有一范，西賊聞之驚破膽！撤軍！" },
+                    { speaker: "旁白", text: "范仲淹不僅防守嚴密，更對羌族推行誠信懷柔，成功保衛了邊疆。" },
+                    { speaker: "好友 滕子京 (信件)", text: "希文兄，我重修了岳陽樓，懇請您為此寫一篇記..." }
+                ];
+                playDialogue(script, () => showScreen('ch5'));
+            } else {
+                document.getElementById('ch4-tip').innerText = "佈署錯誤！敵軍會從未設防的側翼繞過，請封鎖左右兩側的咽喉要道。";
+            }
+        }
+
+        // --- 第五章邏輯 (天氣與天平) ---
+        let isRain = true;
+        let collectedWorry = false;
+        let collectedJoy = false;
+
+        function toggleWeather() {
+            const s = document.getElementById('screen-ch5');
+            const status = document.getElementById('weather-status');
+            const btnWorry = document.getElementById('frag-worry');
+            const btnJoy = document.getElementById('frag-joy');
+
+            isRain = !isRain;
+            if (isRain) {
+                s.classList.replace('weather-sun', 'weather-rain');
+                status.innerText = "霪雨霏霏 🌧️";
+                btnWorry.style.opacity = '1'; btnWorry.style.pointerEvents = 'auto';
+                btnJoy.style.opacity = '0'; btnJoy.style.pointerEvents = 'none';
+            } else {
+                s.classList.replace('weather-rain', 'weather-sun');
+                status.innerText = "春和景明 ☀️";
+                btnWorry.style.opacity = '0'; btnWorry.style.pointerEvents = 'none';
+                btnJoy.style.opacity = '1'; btnJoy.style.pointerEvents = 'auto';
+            }
+        }
+
+        function collectFragment(type) {
+            const beam = document.getElementById('scale-beam');
+            if (type === 'worry' && !collectedWorry) {
+                collectedWorry = true;
+                document.getElementById('frag-worry').style.display = 'none';
+                document.getElementById('plate-left').innerText = "先憂";
+                document.getElementById('plate-left').classList.add('bg-gray-700', 'text-white');
+                beam.classList.replace('rotate-12', '-rotate-12'); // 傾斜改變
+            }
+            if (type === 'joy' && !collectedJoy) {
+                collectedJoy = true;
+                document.getElementById('frag-joy').style.display = 'none';
+                document.getElementById('plate-right').innerText = "後樂";
+                document.getElementById('plate-right').classList.add('bg-yellow-500', 'text-black');
+            }
+
+            if (collectedWorry && collectedJoy) {
+                beam.classList.remove('rotate-12', '-rotate-12');
+                beam.classList.add('rotate-0'); // 達到平衡
+                setTimeout(() => {
+                    const script = [
+                        { speaker: "范仲淹", text: "嗟夫！予嘗求古仁人之心... 然則何時而樂耶？" },
+                        { speaker: "范仲淹", text: "其必曰：『先天下之憂而憂，後天下之樂而樂』乎！" }
+                    ];
+                    playDialogue(script, () => showScreen('end'));
+                }, 1000);
+            }
+        }
+
+        // 初始化
+        // window.onload = () => showScreen('title');
+    </script>
+</body>
+</html>
